@@ -4,6 +4,8 @@ style is inspired by the SKLearn module'''
 import logging
 logging.basicConfig(level=logging.INFO)
 import matplotlib.pyplot as plt
+from matplotlib import style
+style.use("ggplot")
 from sklearn.datasets import make_classification
 import numpy as np
 import math
@@ -20,6 +22,7 @@ def cross_entropy(prediction, label):
 class LogisticRegression():
     def __init__(self, alpha=0.01):
         self.ALPHA = alpha
+        self.errors = []
 
     def train(self, train_data, train_labels):
         bias = -1*np.ones([train_data[:,0].size, 1])
@@ -27,10 +30,15 @@ class LogisticRegression():
         self.w = 2*np.random.random(inputs[0].shape)-1
         
         for x, y in zip(inputs, train_labels):
+            # Update weights
             output = sigmoid(np.dot(self.w, x))
             # error = cross_entropy(output, y)
-            delta_w = self.ALPHA*(output-y)*x
+            error = output-y
+            delta_w = self.ALPHA*error*x
             self.w -= delta_w
+
+            # Record error
+            self.errors.append(error)
 
     def predict(self, test_data):
         predictions = []
@@ -80,23 +88,35 @@ def plot_test_data(test_data, test_labels):
 # Algorithm
 
 X, y = make_classification(
-    n_samples=200, 
+    n_samples=10000, 
     n_features=2, 
     n_classes=2, 
     n_clusters_per_class=1, 
     n_informative=2, 
     n_redundant=0,
-    class_sep=1)
+    class_sep=1.5)
 X_train, X_test, y_train, y_test = split_data(X, y)
 
-clf = LogisticRegression(alpha=0.1)
+clf = LogisticRegression(alpha=0.001)
 clf.train(X_train, y_train)
 y_pred = clf.predict(X_test)
 print('Score:', clf.score(y_pred, y_test))
 
+fig_clf = plt.figure(1)
+plt.title("Classification")
 x0, x1 = clf.plot_decision_boundary(X_test)
 blue_class, red_class = plot_test_data(X_test, y_test)
 ax1 = plt.plot(x0, x1)
 ax2 = plt.plot(blue_class[:,0], blue_class[:,1], 'bo')
 ax3 = plt.plot(red_class[:,0], red_class[:,1], 'ro')
+
+fig_err = plt.figure(2)
+plt.title("Error")
+iterations = np.arange(len(clf.errors))
+errors = np.array(clf.errors).reshape(-1, 1)
+sqrd_errors = np.square(clf.errors).reshape(-1, 1)
+e = np.hstack([errors, sqrd_errors]).reshape(-1, 2)
+ax4 = plt.plot(iterations, e)
+plt.legend(["Error", "Squared Error"])
+
 plt.show()
